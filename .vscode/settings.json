@@ -1,0 +1,9 @@
+{
+    "postman.settings.dotenv-detection-notification-visibility": false,
+    "editor.quickSuggestions": {
+        "other": true,
+        "comments": true,
+        "strings": true
+    },
+    "editor.suggestOnTriggerCharacters": true
+}
