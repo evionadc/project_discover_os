@@ -1,25 +1,30 @@
-﻿import { useState } from "react";
-import type { ProblemCreate } from "../types";
+import { useState } from "react";
+import type { MvpCreate } from "../types";
 
-interface ProblemFormProps {
-  workspaceId: number;
-  onCreate: (payload: ProblemCreate) => Promise<void>;
+interface MvpFormProps {
+  hypothesisId: string;
+  onCreate: (payload: MvpCreate) => Promise<void>;
 }
 
-export default function ProblemForm({ workspaceId, onCreate }: ProblemFormProps) {
-  const [title, setTitle] = useState("");
+export default function MvpForm({ hypothesisId, onCreate }: MvpFormProps) {
   const [description, setDescription] = useState("");
+  const [scope, setScope] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  const canSubmit = title.trim().length > 0 && !submitting;
+  const canSubmit = hypothesisId.trim().length > 0 && !submitting;
 
   const handleSubmit = async () => {
     if (!canSubmit) return;
     setSubmitting(true);
     try {
-      await onCreate({ workspace_id: workspaceId, title, description });
-      setTitle("");
+      await onCreate({
+        hypothesis_id: hypothesisId,
+        description: description.trim().length > 0 ? description : undefined,
+        scope: scope.trim().length > 0 ? scope : undefined,
+      });
+      setHypothesisId("");
       setDescription("");
+      setScope("");
     } finally {
       setSubmitting(false);
     }
@@ -49,21 +54,21 @@ export default function ProblemForm({ workspaceId, onCreate }: ProblemFormProps)
   };
 
   return (
-    <section style={{ marginTop: 16 }} id="new-problem">
-      <input
-        placeholder="Problem title"
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-        style={fieldStyle}
-      />
+    <section style={{ marginTop: 16 }} id="new-mvp">
       <textarea
         placeholder="Description"
         value={description}
         onChange={(e) => setDescription(e.target.value)}
-        style={{ ...fieldStyle, width: 420, minHeight: 80 }}
+        style={{ ...fieldStyle, width: 480, minHeight: 80 }}
+      />
+      <textarea
+        placeholder="Scope"
+        value={scope}
+        onChange={(e) => setScope(e.target.value)}
+        style={{ ...fieldStyle, width: 480, minHeight: 80 }}
       />
       <button onClick={handleSubmit} disabled={!canSubmit} style={buttonStyle}>
-        {submitting ? "Creating..." : "Create problem"}
+        {submitting ? "Creating..." : "Create MVP"}
       </button>
     </section>
   );

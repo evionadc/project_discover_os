@@ -1,25 +1,25 @@
-﻿import { useState } from "react";
-import type { ProblemCreate } from "../types";
+import { useState } from "react";
+import type { PersonaCreate } from "../types";
 
-interface ProblemFormProps {
-  workspaceId: number;
-  onCreate: (payload: ProblemCreate) => Promise<void>;
+interface PersonaFormProps {
+  problemId: string;
+  onCreate: (payload: PersonaCreate) => Promise<void>;
 }
 
-export default function ProblemForm({ workspaceId, onCreate }: ProblemFormProps) {
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
+export default function PersonaForm({ problemId, onCreate }: PersonaFormProps) {
+  const [name, setName] = useState("");
+  const [context, setContext] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  const canSubmit = title.trim().length > 0 && !submitting;
+  const canSubmit = name.trim().length > 0 && !submitting;
 
   const handleSubmit = async () => {
     if (!canSubmit) return;
     setSubmitting(true);
     try {
-      await onCreate({ workspace_id: workspaceId, title, description });
-      setTitle("");
-      setDescription("");
+      await onCreate({ problem_id: problemId, name, context });
+      setName("");
+      setContext("");
     } finally {
       setSubmitting(false);
     }
@@ -49,21 +49,21 @@ export default function ProblemForm({ workspaceId, onCreate }: ProblemFormProps)
   };
 
   return (
-    <section style={{ marginTop: 16 }} id="new-problem">
+    <section style={{ marginTop: 16 }} id="new-persona">
       <input
-        placeholder="Problem title"
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
+        placeholder="Persona name"
+        value={name}
+        onChange={(e) => setName(e.target.value)}
         style={fieldStyle}
       />
       <textarea
-        placeholder="Description"
-        value={description}
-        onChange={(e) => setDescription(e.target.value)}
+        placeholder="Context"
+        value={context}
+        onChange={(e) => setContext(e.target.value)}
         style={{ ...fieldStyle, width: 420, minHeight: 80 }}
       />
       <button onClick={handleSubmit} disabled={!canSubmit} style={buttonStyle}>
-        {submitting ? "Creating..." : "Create problem"}
+        {submitting ? "Creating..." : "Create persona"}
       </button>
     </section>
   );
