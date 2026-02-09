@@ -24,7 +24,8 @@ class Feature(Base):
     __tablename__ = "features"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    mvp_id = Column(UUID(as_uuid=True), ForeignKey("mvps.id"))
+    hypothesis_id = Column(UUID(as_uuid=True), ForeignKey("hypotheses.id"), nullable=True)
+    mvp_id = Column(UUID(as_uuid=True), ForeignKey("mvps.id"), nullable=True)
     title = Column(String(255), nullable=False)
     description = Column(Text)
     business_value = Column(String(255))
@@ -37,7 +38,8 @@ class Story(Base):
     __tablename__ = "stories"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    feature_id = Column(UUID(as_uuid=True), ForeignKey("features.id"))
+    feature_id = Column(UUID(as_uuid=True), ForeignKey("features.id"), nullable=True)
+    workspace_id = Column(Integer, ForeignKey("workspaces.id"), nullable=True)
     title = Column(String(255), nullable=False)
     description = Column(Text)
     acceptance_criteria = Column(Text)

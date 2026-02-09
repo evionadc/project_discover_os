@@ -19,12 +19,23 @@ def create_problem(data: schemas.ProblemCreate, db: Session = Depends(get_db)):
     return problem
 
 
-@router.post("/personas")
+@router.get("/personas", response_model=list[schemas.PersonaResponse])
+def list_personas(db: Session = Depends(get_db)):
+    return db.query(models.Persona).all()
+
+
+@router.post("/personas", response_model=schemas.PersonaResponse)
 def create_persona(data: schemas.PersonaCreate, db: Session = Depends(get_db)):
     persona = models.Persona(**data.dict())
     db.add(persona)
     db.commit()
-    return {"status": "created"}
+    db.refresh(persona)
+    return persona
+
+
+@router.get("/hypotheses", response_model=list[schemas.HypothesisResponse])
+def list_hypotheses(db: Session = Depends(get_db)):
+    return db.query(models.Hypothesis).all()
 
 
 @router.post("/hypotheses")
@@ -33,6 +44,11 @@ def create_hypothesis(data: schemas.HypothesisCreate, db: Session = Depends(get_
     db.add(hypothesis)
     db.commit()
     return {"status": "created"}
+
+
+@router.get("/mvps", response_model=list[schemas.MVPResponse])
+def list_mvps(db: Session = Depends(get_db)):
+    return db.query(models.MVP).all()
 
 
 @router.post("/mvps")

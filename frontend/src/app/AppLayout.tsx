@@ -5,80 +5,203 @@
 ========================= */
 
 const fontFamily =
-  '-apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
+  '"Source Sans 3", "Segoe UI", "Helvetica Neue", "Noto Sans", sans-serif';
 
 /* =========================
    Styles
 ========================= */
 
 const sidebarStyle: CSSProperties = {
-  width: 240,
-  padding: 20,
-  background: "#0f172a", // slate-900
-  color: "#e5e7eb", // gray-200
-  borderRight: "1px solid #1e293b",
+  width: 260,
+  padding: 16,
+  background: "#f4f5f7",
+  color: "#1f2937",
+  borderRight: "1px solid #e5e7eb",
   flexShrink: 0,
   fontFamily,
 };
 
 const topbarStyle: CSSProperties = {
   height: 56,
-  padding: "0 24px",
+  padding: "0 20px",
   display: "flex",
   alignItems: "center",
   justifyContent: "space-between",
-  background: "#020617", // almost black
-  color: "#f8fafc",
-  borderBottom: "1px solid #1e293b",
+  background: "#ffffff",
+  color: "#111827",
+  borderBottom: "1px solid #e5e7eb",
   flexShrink: 0,
   fontFamily,
 };
 
 const contentStyle: CSSProperties = {
   flex: 1,
-  padding: 32,
+  padding: 24,
   overflow: "auto",
-  background:
-    "radial-gradient(circle at top left, #0f172a, #020617)",
-  color: "#f8fafc",
+  background: "#f8f9fb",
+  color: "#111827",
   fontFamily,
 };
-
 
 /* =========================
    Components
 ========================= */
 
-function TopBar() {
+function TopBar({
+  userName,
+  workspaceName,
+  onProfile,
+  onWorkspace,
+  onQuit,
+  activeNav,
+}: {
+  userName: string;
+  workspaceName: string;
+  onProfile: () => void;
+  onWorkspace: () => void;
+  onQuit: () => void;
+  activeNav: string;
+}) {
+  const sectionLabel: Record<string, string> = {
+    problems: "Problemas",
+    personas: "Personas",
+    hypotheses: "Hypotheses",
+    mvps: "MVPs",
+    profile: "Profile",
+    workspace: "Workspace",
+  };
+
   return (
     <header style={topbarStyle}>
-      <strong style={{ fontSize: 16, letterSpacing: 0.4 }}>
-        Product OS
-      </strong>
-
-      <div style={{ fontSize: 13, color: "#cbd5f5" }}>
-        <span style={{ marginRight: 16 }}>
-          Workspace: <strong>Produto XPTO</strong>
+      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        <strong style={{ fontSize: 15, letterSpacing: 0.2 }}>Product OS</strong>
+        <span style={{ color: "#9ca3af" }}>/</span>
+        <span style={{ color: "#6b7280" }}>{workspaceName}</span>
+        <span style={{ color: "#9ca3af" }}>/</span>
+        <span style={{ color: "#111827" }}>
+          {sectionLabel[activeNav] ?? "Problemas"}
         </span>
-        <span>PM</span>
+      </div>
+
+      <div style={{ fontSize: 13, color: "#6b7280" }}>
+        <button
+          onClick={onWorkspace}
+          style={{
+            marginRight: 16,
+            background: "transparent",
+            border: "none",
+            color: "#6b7280",
+            cursor: "pointer",
+            padding: 0,
+            fontSize: 13,
+          }}
+        >
+          Workspace: <strong style={{ color: "#111827" }}>{workspaceName}</strong>
+        </button>
+        <button
+          onClick={onProfile}
+          style={{
+            background: "transparent",
+            border: "none",
+            color: "#111827",
+            cursor: "pointer",
+            padding: 0,
+            fontSize: 13,
+            marginRight: 12,
+          }}
+        >
+          {userName}
+        </button>
+        <button
+          onClick={onQuit}
+          style={{
+            background: "#f3f4f6",
+            border: "1px solid #e5e7eb",
+            color: "#111827",
+            padding: "4px 10px",
+            borderRadius: 6,
+            cursor: "pointer",
+            fontSize: 12,
+          }}
+        >
+          Sair
+        </button>
       </div>
     </header>
   );
 }
 
-function SideNav() {
+function SideNav({
+  activeNav,
+  onNavigate,
+}: {
+  activeNav: string;
+  onNavigate: (next: string, anchor?: string) => void;
+}) {
   return (
     <aside style={sidebarStyle}>
+      <div style={{ display: "flex", alignItems: "center", marginBottom: 16 }}>
+        <div
+          style={{
+            width: 28,
+            height: 28,
+            borderRadius: 6,
+            background: "#2563eb",
+            color: "#ffffff",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontWeight: 700,
+            fontSize: 12,
+            marginRight: 10,
+          }}
+        >
+          PO
+        </div>
+        <div style={{ fontWeight: 600 }}>Produto XPTO</div>
+        <button
+          style={{
+            marginLeft: "auto",
+            background: "transparent",
+            border: "1px solid #e5e7eb",
+            borderRadius: 6,
+            width: 26,
+            height: 26,
+            cursor: "pointer",
+            color: "#6b7280",
+          }}
+          aria-label="Add"
+        >
+          +
+        </button>
+      </div>
+
       <NavSection title="Discovery">
-        <NavItem active>Problemas</NavItem>
-        <NavItem>Personas</NavItem>
-        <NavItem>Hipóteses</NavItem>
-        <NavItem>MVPs</NavItem>
+        <NavItem active={activeNav === "problems"} onClick={() => onNavigate("problems")}
+        >
+          Problemas
+        </NavItem>
+        <NavItem active={activeNav === "personas"} onClick={() => onNavigate("personas")}
+        >
+          Personas
+        </NavItem>
+        <NavItem active={activeNav === "hypotheses"} onClick={() => onNavigate("hypotheses")}
+        >
+          Hipóteses
+        </NavItem>
+        <NavItem active={activeNav === "mvps"} onClick={() => onNavigate("mvps")}
+        >
+          MVPs
+        </NavItem>
       </NavSection>
 
       <NavSection title="Delivery">
-        <NavItem>Features</NavItem>
-        <NavItem>Stories</NavItem>
+        <NavItem active={activeNav === "features"} onClick={() => onNavigate("features")}>
+          Features
+        </NavItem>
+        <NavItem active={activeNav === "stories"} onClick={() => onNavigate("stories")}>
+          Stories
+        </NavItem>
       </NavSection>
     </aside>
   );
@@ -102,28 +225,25 @@ function NavSection({
           fontSize: 11,
           textTransform: "uppercase",
           letterSpacing: 1,
-          color: "#94a3b8",
+          color: "#9ca3af",
           marginBottom: 12,
         }}
       >
         {title}
       </div>
-      <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
-        {children}
-      </ul>
+      <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>{children}</ul>
     </div>
   );
 }
 
-
-
-
 function NavItem({
   children,
   active,
+  onClick,
 }: {
   children: ReactNode;
   active?: boolean;
+  onClick?: () => void;
 }) {
   return (
     <li
@@ -133,10 +253,12 @@ function NavItem({
         borderRadius: 6,
         cursor: "pointer",
         fontSize: 14,
-        color: active ? "#ffffff" : "#cbd5e1",
-        background: active ? "#1e293b" : "transparent",
-        fontWeight: active ? 600 : 400,
+        color: active ? "#111827" : "#374151",
+        background: active ? "#e5e7eb" : "transparent",
+        fontWeight: active ? 600 : 500,
+        borderLeft: active ? "3px solid #2563eb" : "3px solid transparent",
       }}
+      onClick={onClick}
     >
       {children}
     </li>
@@ -149,9 +271,25 @@ function NavItem({
 
 interface LayoutProps {
   children: ReactNode;
+  activeNav: string;
+  onNavigate: (next: string, anchor?: string) => void;
+  onProfile: () => void;
+  onWorkspace: () => void;
+  onQuit: () => void;
+  userName: string;
+  workspaceName: string;
 }
 
-export default function AppLayout({ children }: LayoutProps) {
+export default function AppLayout({
+  children,
+  activeNav,
+  onNavigate,
+  onProfile,
+  onWorkspace,
+  onQuit,
+  userName,
+  workspaceName,
+}: LayoutProps) {
   return (
     <div
       style={{
@@ -162,10 +300,17 @@ export default function AppLayout({ children }: LayoutProps) {
         overflow: "hidden",
       }}
     >
-      <TopBar />
+      <TopBar
+        userName={userName}
+        workspaceName={workspaceName}
+        onProfile={onProfile}
+        onWorkspace={onWorkspace}
+        onQuit={onQuit}
+        activeNav={activeNav}
+      />
 
       <div style={{ display: "flex", flex: 1 }}>
-        <SideNav />
+        <SideNav activeNav={activeNav} onNavigate={onNavigate} />
         <main style={contentStyle}>{children}</main>
       </div>
     </div>
