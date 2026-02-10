@@ -10,6 +10,7 @@ import ProfilePage from "../modules/auth/pages/ProfilePage";
 import WorkspacePage from "../modules/workspaces/pages/WorkspacePage";
 import FeaturesPage from "../modules/delivery/pages/FeaturesPage";
 import StoriesPage from "../modules/delivery/pages/StoriesPage";
+import InceptionWizardPage from "../modules/inceptions/pages/InceptionWizardPage";
 import { useWorkspace } from "../modules/shared/hooks/useWorkspace";
 
 export default function App() {
@@ -54,6 +55,7 @@ export default function App() {
   if (activeNav === "personas") page = <PersonasPage />;
   if (activeNav === "hypotheses") page = <HypothesesPage />;
   if (activeNav === "mvps") page = <MvpsPage />;
+  if (activeNav === "inception") page = <InceptionWizardPage />;
   if (activeNav === "features") page = <FeaturesPage />;
   if (activeNav === "stories") page = <StoriesPage />;
   if (activeNav === "profile") page = <ProfilePage />;

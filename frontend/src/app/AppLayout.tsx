@@ -63,6 +63,7 @@ function TopBar({
   activeNav: string;
 }) {
   const sectionLabel: Record<string, string> = {
+    inception: "Lean Inception",
     problems: "Problemas",
     personas: "Personas",
     hypotheses: "Hypotheses",
@@ -177,6 +178,9 @@ function SideNav({
       </div>
 
       <NavSection title="Discovery">
+        <NavItem active={activeNav === "inception"} onClick={() => onNavigate("inception")}>
+          Lean Inception
+        </NavItem>
         <NavItem active={activeNav === "problems"} onClick={() => onNavigate("problems")}
         >
           Problemas
@@ -309,9 +313,9 @@ export default function AppLayout({
         activeNav={activeNav}
       />
 
-      <div style={{ display: "flex", flex: 1 }}>
+      <div style={{ display: "flex", flex: 1, minHeight: 0 }}>
         <SideNav activeNav={activeNav} onNavigate={onNavigate} />
-        <main style={contentStyle}>{children}</main>
+        <main style={{ ...contentStyle, minHeight: 0 }}>{children}</main>
       </div>
     </div>
   );

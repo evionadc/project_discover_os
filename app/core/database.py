@@ -1,22 +1,45 @@
-# app/core/database.py
+import uuid
+from datetime import datetime
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, DeclarativeBase, Session
-from typing import Generator
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, sessionmaker
+from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.sql import func
+
 from app.core.config import settings
 
-database_url = settings.database_url
-if database_url.startswith("postgresql://"):
-    database_url = database_url.replace("postgresql://", "postgresql+psycopg://", 1)
-
-engine = create_engine(database_url, echo=True)
-
-SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
 
 class Base(DeclarativeBase):
     pass
 
 
-def get_db() -> Generator[Session, None, None]:
+class TimestampMixin:
+    created_at: Mapped[datetime] = mapped_column(
+        default=func.now(), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        default=func.now(),
+        onupdate=func.now(),
+        nullable=False,
+    )
+
+
+class UUIDMixin:
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+    )
+
+
+connect_args = {}
+if settings.database_url.startswith("sqlite"):
+    connect_args = {"check_same_thread": False}
+
+engine = create_engine(settings.database_url, connect_args=connect_args)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+
+def get_db():
     db = SessionLocal()
     try:
         yield db
