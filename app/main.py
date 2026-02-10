@@ -5,6 +5,7 @@ from app.modules.auth.router import router as auth_router
 from app.modules.workspace.router import router as workspace_router
 from app.modules.discovery.routes import router as discovery_router
 from app.modules.delivery.routes import router as delivery_router
+from app.modules.inceptions.routes import router as inceptions_router
 
 
 
@@ -34,6 +35,7 @@ app.include_router(auth_router)
 app.include_router(workspace_router)
 app.include_router(discovery_router)
 app.include_router(delivery_router)
+app.include_router(inceptions_router)
 
 @app.get("/health")
 def health():
