@@ -6,6 +6,10 @@ from app.modules.workspace.router import router as workspace_router
 from app.modules.discovery.routes import router as discovery_router
 from app.modules.delivery.routes import router as delivery_router
 from app.modules.inceptions.routes import router as inceptions_router
+from app.core.config import settings
+from app.core.database import SessionLocal
+from app.core.security import hash_password
+from app.models.user import User
 
 
 
@@ -38,6 +42,26 @@ app.include_router(workspace_router)
 app.include_router(discovery_router)
 app.include_router(delivery_router)
 app.include_router(inceptions_router)
+
+
+@app.on_event("startup")
+def ensure_admin_user():
+    """Create default admin user when ADMIN_EMAIL/ADMIN_PASSWORD are provided."""
+    if not settings.admin_email or not settings.admin_password:
+        return
+    db = SessionLocal()
+    try:
+        user = db.query(User).filter(User.email == settings.admin_email).first()
+        if not user:
+            db.add(
+                User(
+                    email=settings.admin_email,
+                    password_hash=hash_password(settings.admin_password),
+                )
+            )
+            db.commit()
+    finally:
+        db.close()
 
 @app.get("/health")
 def health():
