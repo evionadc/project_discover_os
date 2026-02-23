@@ -1,16 +1,15 @@
-# app/core/config.py
-from dataclasses import dataclass
 import os
+from dataclasses import dataclass
 
 try:
     from dotenv import load_dotenv
 except Exception:  # pragma: no cover - optional dependency at runtime
-    def load_dotenv() -> None:
+    def load_dotenv(*args, **kwargs):
         return None
 
-
-load_dotenv()
-
+# Only load .env when DATABASE_URL is not already provided by the environment
+if "DATABASE_URL" not in os.environ:
+    load_dotenv()
 
 @dataclass(frozen=True)
 class Settings:
