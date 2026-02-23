@@ -87,7 +87,7 @@ export default function FeaturesPage() {
     return () => {
       isMounted = false;
     };
-  }, [selectedProduct.id]);
+  }, [selectedProduct.id, loadData]);
 
   const handleCreate = async (payload: {
     product_id: number;
