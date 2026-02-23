@@ -1,0 +1,17 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:15
+    container_name: productos-db
+    environment:
+      POSTGRES_USER: productos
+      POSTGRES_PASSWORD: productos
+      POSTGRES_DB: productos
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:
