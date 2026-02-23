@@ -61,7 +61,8 @@ def run_migrations_offline() -> None:
     script output.
 
     """
-    load_dotenv(dotenv_path=os.path.join(PROJECT_ROOT, ".env"), override=True)
+    if "DATABASE_URL" not in os.environ:
+        load_dotenv(dotenv_path=os.path.join(PROJECT_ROOT, ".env"), override=False)
     url = os.getenv("DATABASE_URL", settings.database_url)
     if url.startswith("postgresql://"):
         url = url.replace("postgresql://", "postgresql+psycopg://", 1)
@@ -84,7 +85,8 @@ def run_migrations_online() -> None:
     and associate a connection with the context.
 
     """
-    load_dotenv(dotenv_path=os.path.join(PROJECT_ROOT, ".env"), override=True)
+    if "DATABASE_URL" not in os.environ:
+        load_dotenv(dotenv_path=os.path.join(PROJECT_ROOT, ".env"), override=False)
     url = os.getenv("DATABASE_URL", settings.database_url)
     if url.startswith("postgresql://"):
         url = url.replace("postgresql://", "postgresql+psycopg://", 1)
