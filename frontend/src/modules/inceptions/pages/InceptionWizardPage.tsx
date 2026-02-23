@@ -165,7 +165,8 @@ export default function InceptionWizardPage() {
     };
   }, [selectedInceptionId, hydrateSteps]);
 
-  const hydrateSteps = useCallback((stepsData: InceptionStep[]) => {
+  const hydrateSteps = useCallback(
+    (stepsData: InceptionStep[]) => {
     const map = new Map(stepsData.map((step) => [step.step_key, step.payload]));
     const vision = map.get("product_vision") as
       | {
@@ -290,7 +291,9 @@ export default function InceptionWizardPage() {
     setAcceptanceCriteria(mvpPayload?.acceptance_criteria ?? "");
     setCostSchedule(mvpPayload?.cost_schedule ?? "");
     setSelectedFeatureIds(mvpPayload?.feature_ids ?? []);
-  }, []);
+  },
+    [featureCards.length]
+  );
 
   const handleCreateInception = async () => {
     if (!newTitle.trim()) return;
