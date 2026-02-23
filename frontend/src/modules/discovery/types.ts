@@ -31,32 +31,28 @@ export interface PersonaCreate {
   main_pain?: string | null;
 }
 
-export interface Hypothesis {
+export interface UserJourney {
   id: string;
-  problem_id: string;
-  statement: string;
-  metric?: string | null;
-  success_criteria?: string | null;
-  status?: string;
+  persona_id: string;
+  name: string;
+  stages: string[];
 }
 
-export interface HypothesisCreate {
-  problem_id: string;
-  statement: string;
-  metric?: string | null;
-  success_criteria?: string | null;
+export interface UserJourneyCreate {
+  persona_id: string;
+  name: string;
+  stages: string[];
 }
 
-export interface Mvp {
+export interface ProductOkr {
   id: string;
-  hypothesis_id: string;
-  description?: string | null;
-  scope?: string | null;
-  status?: string;
+  product_id: number;
+  objective: string;
+  key_results: string[];
 }
 
-export interface MvpCreate {
-  hypothesis_id: string;
-  description?: string | null;
-  scope?: string | null;
+export interface ProductOkrCreate {
+  product_id: number;
+  objective: string;
+  key_results: string[];
 }

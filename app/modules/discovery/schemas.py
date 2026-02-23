@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from uuid import UUID
 from typing import Optional
 
@@ -17,6 +17,13 @@ class ProblemResponse(ProblemCreate):
         from_attributes = True
 
 
+class ProblemUpdate(BaseModel):
+    workspace_id: Optional[int] = None
+    title: Optional[str] = None
+    description: Optional[str] = None
+    status: Optional[str] = None
+
+
 class PersonaCreate(BaseModel):
     problem_id: UUID
     name: str
@@ -32,30 +39,47 @@ class PersonaResponse(PersonaCreate):
         from_attributes = True
 
 
-class HypothesisCreate(BaseModel):
-    problem_id: UUID
-    statement: str
-    metric: Optional[str]
-    success_criteria: Optional[str]
+class PersonaUpdate(BaseModel):
+    problem_id: Optional[UUID] = None
+    name: Optional[str] = None
+    context: Optional[str] = None
+    goal: Optional[str] = None
+    main_pain: Optional[str] = None
 
 
-class HypothesisResponse(HypothesisCreate):
+class UserJourneyCreate(BaseModel):
+    persona_id: UUID
+    name: str
+    stages: list[str] = Field(default_factory=list)
+
+
+class UserJourneyUpdate(BaseModel):
+    persona_id: Optional[UUID] = None
+    name: Optional[str] = None
+    stages: Optional[list[str]] = None
+
+
+class UserJourneyResponse(UserJourneyCreate):
     id: UUID
-    status: str
 
     class Config:
         from_attributes = True
 
 
-class MVPCreate(BaseModel):
-    hypothesis_id: UUID
-    description: Optional[str]
-    scope: Optional[str]
+class ProductOKRCreate(BaseModel):
+    product_id: int
+    objective: str
+    key_results: list[str] = Field(default_factory=list)
 
 
-class MVPResponse(MVPCreate):
+class ProductOKRUpdate(BaseModel):
+    product_id: Optional[int] = None
+    objective: Optional[str] = None
+    key_results: Optional[list[str]] = None
+
+
+class ProductOKRResponse(ProductOKRCreate):
     id: UUID
-    status: str
 
     class Config:
         from_attributes = True

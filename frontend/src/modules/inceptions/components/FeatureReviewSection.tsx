@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+﻿import { useMemo, useState } from "react";
 import type { CSSProperties } from "react";
 
 interface FeatureCard {
@@ -93,9 +93,9 @@ export default function FeatureReviewSection({
 
   const validateAdd = (cardId: string, waveIndex: number) => {
     const wave = normalizedWaves[waveIndex];
-    if (!wave) return "Onda invÃ¡lida.";
+    if (!wave) return "Onda inválida.";
     const review = reviewMap.get(eligibleCards.find((c) => c.id === cardId)?.text ?? "");
-    if (!review) return "Card sem avaliaÃ§Ã£o.";
+    if (!review) return "Card sem avaliação.";
 
     const colors = wave.cards.map((id) => {
       const card = eligibleCards.find((c) => c.id === id);
@@ -104,14 +104,14 @@ export default function FeatureReviewSection({
     });
     const redCount = colors.filter((c) => c === "red").length + (cardColor(review) === "red" ? 1 : 0);
     if (redCount > 1) {
-      return "Regra 2: uma onda nÃ£o pode conter mais de um cartÃ£o vermelho.";
+      return "Regra 2: uma onda não pode conter mais de um cartão vermelho.";
     }
     if (wave.cards.length >= 3 && !wave.cards.includes(cardId)) {
-      return "Regra 1: a onda pode conter no mÃ¡ximo trÃªs cartÃµes.";
+      return "Regra 1: a onda pode conter no máximo três cartões.";
     }
     const nextColors = [...colors, cardColor(review)];
     if (nextColors.length === 3 && nextColors.every((c) => c !== "green")) {
-      return "Regra 3: a onda nÃ£o pode ter trÃªs cartÃµes apenas amarelos/vermelhos.";
+      return "Regra 3: a onda não pode ter três cartões apenas amarelos/vermelhos.";
     }
 
     const effortSum =
@@ -121,7 +121,7 @@ export default function FeatureReviewSection({
         return sum + (rev?.effort ?? 0);
       }, 0) + (review.effort ?? 0);
     if (effortSum > 5) {
-      return "Regra 4: soma de esforÃ§o nÃ£o pode ultrapassar 5 Es.";
+      return "Regra 4: soma de esforço não pode ultrapassar 5 Es.";
     }
     const businessSum =
       wave.cards.reduce((sum, id) => {
@@ -137,13 +137,13 @@ export default function FeatureReviewSection({
       }, 0) + (review.ux ?? 0);
     const nextCount = wave.cards.includes(cardId) ? wave.cards.length : wave.cards.length + 1;
     if (nextCount >= 2 && (businessSum < 4 || uxSum < 4)) {
-      return "Regra 5: soma de NegÃ³cio e UX deve ser >= 4.";
+      return "Regra 5: soma de Negócio e UX deve ser >= 4.";
     }
     const depId = deps[cardId];
     if (depId) {
       const depWaveIndex = getWaveIndexByCard(depId);
       if (depWaveIndex === -1 || depWaveIndex >= waveIndex) {
-        return "Regra 6: dependÃªncia deve estar em uma onda anterior.";
+        return "Regra 6: dependência deve estar em uma onda anterior.";
       }
     }
     return null;
@@ -331,7 +331,7 @@ export default function FeatureReviewSection({
                         style={{ ...formFieldStyle, width: "100%", marginBottom: 0 }}
                       >
                         <option value="low">Baixo</option>
-                        <option value="medium">MÃ©dio</option>
+                        <option value="medium">Médio</option>
                         <option value="high">Alto</option>
                       </select>
                     </label>
@@ -350,7 +350,7 @@ export default function FeatureReviewSection({
                         style={{ ...formFieldStyle, width: "100%", marginBottom: 0 }}
                       >
                         <option value="low">Baixo</option>
-                        <option value="medium">MÃ©dio</option>
+                        <option value="medium">Médio</option>
                         <option value="high">Alto</option>
                       </select>
                     </label>
@@ -365,7 +365,7 @@ export default function FeatureReviewSection({
                       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6 }}>
                         {(["effort", "business", "ux"] as const).map((field) => (
                           <label key={field} style={{ fontSize: 12 }}>
-                            {field === "effort" ? "EsforÃ§o" : field === "business" ? "NegÃ³cio" : "UX"}
+                            {field === "effort" ? "Esforço" : field === "business" ? "Negócio" : "UX"}
                             <select
                               value={review[field] ?? ""}
                               onChange={(e) => {
@@ -420,7 +420,7 @@ export default function FeatureReviewSection({
       <div style={{ marginTop: 24 }}>
         <h3 style={{ marginBottom: 6 }}>Sequencing</h3>
         <p style={{ color: "#6b7280", marginTop: 0 }}>
-          Arraste os cartÃµes para as ondas. Itens em parking lot nÃ£o aparecem.
+          Arraste os cartões para as ondas. Itens em parking lot não aparecem.
         </p>
         {sequenceError && (
           <div style={{ color: "#b91c1c", fontSize: 13, marginBottom: 8 }}>{sequenceError}</div>
@@ -557,7 +557,7 @@ export default function FeatureReviewSection({
                       onChange={(e) => setDeps((prev) => ({ ...prev, [id]: e.target.value }))}
                       style={{ ...formFieldStyle, width: 260, marginBottom: 0 }}
                     >
-                      <option value="">Sem dependÃªncia</option>
+                      <option value="">Sem dependência</option>
                       {eligibleCards
                         .filter((c) => c.id !== id)
                         .map((c) => (
@@ -576,3 +576,4 @@ export default function FeatureReviewSection({
     </div>
   );
 }
+

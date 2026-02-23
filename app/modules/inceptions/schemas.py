@@ -34,3 +34,14 @@ class InceptionStepResponse(BaseModel):
 
 class InceptionDetailResponse(InceptionResponse):
     steps: list[InceptionStepResponse] = []
+
+
+class InceptionPublishProductRequest(BaseModel):
+    name: str | None = None
+
+
+class InceptionPublishProductResponse(BaseModel):
+    product_id: int
+    workspace_id: int
+    name: str
+    blueprint_id: int

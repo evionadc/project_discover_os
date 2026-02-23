@@ -4,9 +4,9 @@ import { EmptyState } from "../../discovery/components/EmptyState";
 import { listInceptions, createInception, listInceptionSteps, upsertInceptionStep } from "../services/inceptionApi";
 import type { Inception, InceptionStep } from "../types";
 import { useWorkspace } from "../../shared/hooks/useWorkspace";
-import { createPersona, getPersonas, getHypotheses, getProblems } from "../../discovery/services/discoveryApi";
+import { createPersona, getPersonas, getProblems } from "../../discovery/services/discoveryApi";
 import { listFeatures } from "../../delivery/services/deliveryApi";
-import type { Persona, Hypothesis, Problem } from "../../discovery/types";
+import type { Persona, Problem } from "../../discovery/types";
 import type { Feature } from "../../delivery/types";
 import ProductVisionSection from "../components/ProductVisionSection";
 import BoundariesSection from "../components/BoundariesSection";
@@ -22,12 +22,12 @@ type StepKey =
   | "mvp_canvas";
 
 const steps: { key: StepKey; title: string; description: string }[] = [
-  { key: "product_vision", title: "Product Vision", description: "Defina o propÃ³sito e valor central." },
-  { key: "boundaries", title: "Is / Is Not / Does / Does Not", description: "Explorar o escopo do produto." },
-  { key: "personas", title: "Personas", description: "Selecionar personas-alvo." },
-  { key: "journey_map", title: "User Journey", description: "Mapear etapas e dores do usuÃ¡rio." },
-  { key: "feature_review", title: "Feature Brainstorming & Review", description: "Brainstorm + revisÃ£o Tech/UX/Business." },
-  { key: "mvp_canvas", title: "MVP Canvas", description: "Definir escopo e mÃ©tricas do MVP." },
+  { key: "product_vision", title: "Visão do Produto", description: "Defina o propósito e o valor central." },
+  { key: "boundaries", title: "É / Não é / Faz / Não faz", description: "Explore o escopo do produto." },
+  { key: "personas", title: "Personas", description: "Selecione as personas-alvo." },
+  { key: "journey_map", title: "Jornada do Usuário", description: "Mapeie etapas, dores e expectativas." },
+  { key: "feature_review", title: "Brainstorming & Review de Features", description: "Brainstorm e revisão Tech/UX/Business." },
+  { key: "mvp_canvas", title: "Canvas do MVP", description: "Defina escopo, métricas e cronograma do MVP." },
 ];
 
 const splitLines = (value: string) =>
@@ -50,7 +50,6 @@ export default function InceptionWizardPage() {
   const [newTitle, setNewTitle] = useState("Lean Inception");
 
   const [personas, setPersonas] = useState<Persona[]>([]);
-  const [hypotheses, setHypotheses] = useState<Hypothesis[]>([]);
   const [features, setFeatures] = useState<Feature[]>([]);
   const [problems, setProblems] = useState<Problem[]>([]);
 
@@ -88,7 +87,6 @@ export default function InceptionWizardPage() {
   const [successMetrics, setSuccessMetrics] = useState("");
   const [acceptanceCriteria, setAcceptanceCriteria] = useState("");
   const [costSchedule, setCostSchedule] = useState("");
-  const [selectedHypothesisIds, setSelectedHypothesisIds] = useState<string[]>([]);
   const [selectedFeatureIds, setSelectedFeatureIds] = useState<string[]>([]);
   const [newPersonaProblemId, setNewPersonaProblemId] = useState("");
   const [newPersonaName, setNewPersonaName] = useState("");
@@ -132,18 +130,11 @@ export default function InceptionWizardPage() {
 
   useEffect(() => {
     let isMounted = true;
-    Promise.all([
-      listInceptions("lean_inception"),
-      getPersonas(),
-      getHypotheses(),
-      listFeatures(),
-      getProblems(),
-    ])
-      .then(([inceptionData, personaData, hypothesisData, featureData, problemData]) => {
+    Promise.all([listInceptions("lean_inception"), getPersonas(), listFeatures(), getProblems()])
+      .then(([inceptionData, personaData, featureData, problemData]) => {
         if (!isMounted) return;
         setInceptions(inceptionData);
         setPersonas(personaData);
-        setHypotheses(hypothesisData);
         setFeatures(featureData);
         setProblems(problemData);
         if (inceptionData.length > 0) {
@@ -298,14 +289,12 @@ export default function InceptionWizardPage() {
       success_metrics?: string;
       acceptance_criteria?: string;
       cost_schedule?: string;
-      hypothesis_ids?: string[];
       feature_ids?: string[];
     } | undefined;
     setEssentialScope(mvpPayload?.essential_scope ?? "");
     setSuccessMetrics(mvpPayload?.success_metrics ?? "");
     setAcceptanceCriteria(mvpPayload?.acceptance_criteria ?? "");
     setCostSchedule(mvpPayload?.cost_schedule ?? "");
-    setSelectedHypothesisIds(mvpPayload?.hypothesis_ids ?? []);
     setSelectedFeatureIds(mvpPayload?.feature_ids ?? []);
   };
 
@@ -397,14 +386,13 @@ export default function InceptionWizardPage() {
           },
         };
       } else if (activeStep === "mvp_canvas") {
-        payload = {
-          essential_scope: essentialScope,
-          success_metrics: successMetrics,
-          acceptance_criteria: acceptanceCriteria,
-          cost_schedule: costSchedule,
-          hypothesis_ids: selectedHypothesisIds,
-          feature_ids: selectedFeatureIds,
-        };
+          payload = {
+            essential_scope: essentialScope,
+            success_metrics: successMetrics,
+            acceptance_criteria: acceptanceCriteria,
+            cost_schedule: costSchedule,
+            feature_ids: selectedFeatureIds,
+          };
       }
       await upsertInceptionStep(selectedInceptionId, activeStep, payload);
     } finally {
@@ -491,7 +479,7 @@ useEffect(() => {
 
   return (
     <>
-      <PageHeader title="Lean Inception" subtitle="Discovery â†’ VisÃ£o do produto" />
+      <PageHeader title="Lean Inception" subtitle="Discovery → Visão do produto" />
 
       {error && <p style={{ color: "#b91c1c" }}>{error}</p>}
 
@@ -571,7 +559,7 @@ useEffect(() => {
             <p style={{ color: "#6b7280", marginTop: 0 }}>{activeStepConfig?.description}</p>
             <div style={{ margin: "12px 0 20px" }}>
               <button onClick={handleSaveStep} style={primaryButton} disabled={saving}>
-                {saving ? "Saving..." : "Save step"}
+              {saving ? "Salvando..." : "Salvar etapa"}
               </button>
             </div>
 
@@ -710,7 +698,7 @@ useEffect(() => {
                       <div style={{ padding: 10 }}>
                         <strong>Perfil</strong>
                         <textarea
-                          placeholder="Idade, contexto, profissÃ£o"
+                          placeholder="Idade, contexto, profissão"
                           value={newPersonaContext}
                           onChange={(e) => setNewPersonaContext(e.target.value)}
                           style={{ ...formFieldStyle, width: "100%", minHeight: 90 }}
@@ -720,7 +708,7 @@ useEffect(() => {
                       <div style={{ padding: 10 }}>
                         <strong>Comportamento</strong>
                         <textarea
-                          placeholder="HÃ¡bitos e comportamentos"
+                          placeholder="Hábitos e comportamentos"
                           value={newPersonaPain}
                           onChange={(e) => setNewPersonaPain(e.target.value)}
                           style={{ ...formFieldStyle, width: "100%", minHeight: 90 }}
@@ -748,7 +736,7 @@ useEffect(() => {
                 </div>
 
                 {personas.length === 0 ? (
-                  <EmptyState title="Sem personas" description="Crie personas no mÃ³dulo Discovery." />
+                  <EmptyState title="Sem personas" description="Crie personas no módulo de Discovery." />
                 ) : (
                   <>
                     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -1016,12 +1004,13 @@ useEffect(() => {
       ) : (
         <EmptyState
           title="Nenhuma inception selecionada"
-          description="Crie uma inception para comeÃ§ar."
+          description="Crie uma inception para começar."
         />
       )}
     </>
   );
 }
+
 
 
 

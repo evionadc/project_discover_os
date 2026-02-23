@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Text, ForeignKey, Enum, Integer
+from sqlalchemy import Column, String, Text, ForeignKey, Enum, Integer, JSON
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 import uuid
@@ -13,18 +13,6 @@ class ProblemStatus(str, enum.Enum):
     discarded = "discarded"
 
 
-class HypothesisStatus(str, enum.Enum):
-    testing = "testing"
-    validated = "validated"
-    invalidated = "invalidated"
-
-
-class MVPStatus(str, enum.Enum):
-    defined = "defined"
-    building = "building"
-    delivered = "delivered"
-
-
 class Problem(Base):
     __tablename__ = "problems"
 
@@ -35,7 +23,6 @@ class Problem(Base):
     status = Column(Enum(ProblemStatus), default=ProblemStatus.open)
 
     personas = relationship("Persona", back_populates="problem")
-    hypotheses = relationship("Hypothesis", back_populates="problem")
 
 
 class Persona(Base):
@@ -49,29 +36,24 @@ class Persona(Base):
     main_pain = Column(Text)
 
     problem = relationship("Problem", back_populates="personas")
+    journeys = relationship("UserJourney", back_populates="persona", cascade="all, delete-orphan")
 
 
-class Hypothesis(Base):
-    __tablename__ = "hypotheses"
-
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    problem_id = Column(UUID(as_uuid=True), ForeignKey("problems.id"))
-    statement = Column(Text, nullable=False)
-    metric = Column(String(255))
-    success_criteria = Column(String(255))
-    status = Column(Enum(HypothesisStatus), default=HypothesisStatus.testing)
-
-    problem = relationship("Problem", back_populates="hypotheses")
-    mvp = relationship("MVP", back_populates="hypothesis", uselist=False)
-
-
-class MVP(Base):
-    __tablename__ = "mvps"
+class UserJourney(Base):
+    __tablename__ = "user_journeys"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    hypothesis_id = Column(UUID(as_uuid=True), ForeignKey("hypotheses.id"))
-    description = Column(Text)
-    scope = Column(Text)
-    status = Column(Enum(MVPStatus), default=MVPStatus.defined)
+    persona_id = Column(UUID(as_uuid=True), ForeignKey("personas.id"), nullable=False)
+    name = Column(String(255), nullable=False)
+    stages = Column(JSON, nullable=False, default=list)
 
-    hypothesis = relationship("Hypothesis", back_populates="mvp")
+    persona = relationship("Persona", back_populates="journeys")
+
+
+class ProductOKR(Base):
+    __tablename__ = "product_okrs"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    product_id = Column(Integer, ForeignKey("workspace_products.id"), nullable=False)
+    objective = Column(Text, nullable=False)
+    key_results = Column(JSON, nullable=False, default=list)

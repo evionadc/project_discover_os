@@ -1,51 +1,5 @@
-﻿import type { CSSProperties, ReactNode } from "react";
-
-/* =========================
-   Base Theme
-========================= */
-
-const fontFamily =
-  '"Source Sans 3", "Segoe UI", "Helvetica Neue", "Noto Sans", sans-serif';
-
-/* =========================
-   Styles
-========================= */
-
-const sidebarStyle: CSSProperties = {
-  width: 260,
-  padding: 16,
-  background: "#f4f5f7",
-  color: "#1f2937",
-  borderRight: "1px solid #e5e7eb",
-  flexShrink: 0,
-  fontFamily,
-};
-
-const topbarStyle: CSSProperties = {
-  height: 56,
-  padding: "0 20px",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "space-between",
-  background: "#ffffff",
-  color: "#111827",
-  borderBottom: "1px solid #e5e7eb",
-  flexShrink: 0,
-  fontFamily,
-};
-
-const contentStyle: CSSProperties = {
-  flex: 1,
-  padding: 24,
-  overflow: "auto",
-  background: "#f8f9fb",
-  color: "#111827",
-  fontFamily,
-};
-
-/* =========================
-   Components
-========================= */
+import type { ReactNode } from "react";
+import "./app-layout.css";
 
 function TopBar({
   userName,
@@ -53,6 +7,7 @@ function TopBar({
   onProfile,
   onWorkspace,
   onQuit,
+  onLeanInception,
   activeNav,
 }: {
   userName: string;
@@ -60,71 +15,44 @@ function TopBar({
   onProfile: () => void;
   onWorkspace: () => void;
   onQuit: () => void;
+  onLeanInception: () => void;
   activeNav: string;
 }) {
   const sectionLabel: Record<string, string> = {
     inception: "Lean Inception",
+    product_edit: "Editar produto",
     problems: "Problemas",
+    okrs: "OKRs",
+    journeys: "Jornadas",
     personas: "Personas",
-    hypotheses: "Hypotheses",
-    mvps: "MVPs",
-    profile: "Profile",
+    features: "Funcionalidades",
+    stories: "Histórias",
+    board: "Quadro",
+    profile: "Perfil",
     workspace: "Workspace",
   };
 
   return (
-    <header style={topbarStyle}>
-      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-        <strong style={{ fontSize: 15, letterSpacing: 0.2 }}>Product OS</strong>
-        <span style={{ color: "#9ca3af" }}>/</span>
-        <span style={{ color: "#6b7280" }}>{workspaceName}</span>
-        <span style={{ color: "#9ca3af" }}>/</span>
-        <span style={{ color: "#111827" }}>
-          {sectionLabel[activeNav] ?? "Problemas"}
-        </span>
+    <header className="app-topbar">
+      <div className="app-topbar__title">
+        <strong>Product OS</strong>
+        <span className="app-topbar__sep">/</span>
+        <span>{workspaceName}</span>
+        <span className="app-topbar__sep">/</span>
+        <span className="app-topbar__active">{sectionLabel[activeNav] ?? "Problemas"}</span>
       </div>
 
-      <div style={{ fontSize: 13, color: "#6b7280" }}>
-        <button
-          onClick={onWorkspace}
-          style={{
-            marginRight: 16,
-            background: "transparent",
-            border: "none",
-            color: "#6b7280",
-            cursor: "pointer",
-            padding: 0,
-            fontSize: 13,
-          }}
-        >
-          Workspace: <strong style={{ color: "#111827" }}>{workspaceName}</strong>
+      <div className="app-topbar__actions">
+        <button onClick={onLeanInception} className="btn btn--ghost" type="button">
+          Lean Inception
         </button>
-        <button
-          onClick={onProfile}
-          style={{
-            background: "transparent",
-            border: "none",
-            color: "#111827",
-            cursor: "pointer",
-            padding: 0,
-            fontSize: 13,
-            marginRight: 12,
-          }}
-        >
+        <button onClick={onWorkspace} className="btn btn--ghost" type="button">
+          Workspace: <strong>{workspaceName}</strong>
+        </button>
+        <button onClick={onProfile} className="btn btn--ghost" type="button">
           {userName}
         </button>
-        <button
-          onClick={onQuit}
-          style={{
-            background: "#f3f4f6",
-            border: "1px solid #e5e7eb",
-            color: "#111827",
-            padding: "4px 10px",
-            borderRadius: 6,
-            cursor: "pointer",
-            fontSize: 12,
-          }}
-        >
+        <button onClick={onQuit} className="btn btn--danger" type="button">
           Sair
         </button>
       </div>
@@ -135,107 +63,64 @@ function TopBar({
 function SideNav({
   activeNav,
   onNavigate,
+  productName,
 }: {
   activeNav: string;
   onNavigate: (next: string, anchor?: string) => void;
+  productName: string;
 }) {
   return (
-    <aside style={sidebarStyle}>
-      <div style={{ display: "flex", alignItems: "center", marginBottom: 16 }}>
-        <div
-          style={{
-            width: 28,
-            height: 28,
-            borderRadius: 6,
-            background: "#2563eb",
-            color: "#ffffff",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontWeight: 700,
-            fontSize: 12,
-            marginRight: 10,
-          }}
-        >
-          PO
+    <aside className="app-sidebar">
+      <div className="app-sidebar__brand">
+        <div className="app-sidebar__avatar">PO</div>
+        <div className="app-sidebar__product">
+          <div className="app-sidebar__name">{productName || "Selecione um produto"}</div>
+          <div className="app-sidebar__sub">Discovery + Delivery</div>
         </div>
-        <div style={{ fontWeight: 600 }}>Produto XPTO</div>
-        <button
-          style={{
-            marginLeft: "auto",
-            background: "transparent",
-            border: "1px solid #e5e7eb",
-            borderRadius: 6,
-            width: 26,
-            height: 26,
-            cursor: "pointer",
-            color: "#6b7280",
-          }}
-          aria-label="Add"
-        >
-          +
-        </button>
       </div>
+      <button
+        type="button"
+        className={`app-sidebar__item ${activeNav === "product_edit" ? "is-active" : ""}`}
+        onClick={() => onNavigate("product_edit")}
+      >
+        Editar produto
+      </button>
 
-      <NavSection title="Discovery">
-        <NavItem active={activeNav === "inception"} onClick={() => onNavigate("inception")}>
-          Lean Inception
-        </NavItem>
-        <NavItem active={activeNav === "problems"} onClick={() => onNavigate("problems")}
-        >
+      <NavSection title="Descoberta">
+        <NavItem active={activeNav === "problems"} onClick={() => onNavigate("problems")}>
           Problemas
         </NavItem>
-        <NavItem active={activeNav === "personas"} onClick={() => onNavigate("personas")}
-        >
+        <NavItem active={activeNav === "personas"} onClick={() => onNavigate("personas")}>
           Personas
         </NavItem>
-        <NavItem active={activeNav === "hypotheses"} onClick={() => onNavigate("hypotheses")}
-        >
-          Hipóteses
+        <NavItem active={activeNav === "okrs"} onClick={() => onNavigate("okrs")}>
+          OKRs
         </NavItem>
-        <NavItem active={activeNav === "mvps"} onClick={() => onNavigate("mvps")}
-        >
-          MVPs
+        <NavItem active={activeNav === "journeys"} onClick={() => onNavigate("journeys")}>
+          Jornadas
         </NavItem>
       </NavSection>
 
-      <NavSection title="Delivery">
+      <NavSection title="Entrega">
         <NavItem active={activeNav === "features"} onClick={() => onNavigate("features")}>
-          Features
+          Funcionalidades
         </NavItem>
         <NavItem active={activeNav === "stories"} onClick={() => onNavigate("stories")}>
-          Stories
+          Histórias
+        </NavItem>
+        <NavItem active={activeNav === "board"} onClick={() => onNavigate("board")}>
+          Quadro
         </NavItem>
       </NavSection>
     </aside>
   );
 }
 
-/* =========================
-   Nav Helpers
-========================= */
-
-function NavSection({
-  title,
-  children,
-}: {
-  title: string;
-  children: ReactNode;
-}) {
+function NavSection({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <div style={{ marginBottom: 24 }}>
-      <div
-        style={{
-          fontSize: 11,
-          textTransform: "uppercase",
-          letterSpacing: 1,
-          color: "#9ca3af",
-          marginBottom: 12,
-        }}
-      >
-        {title}
-      </div>
-      <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>{children}</ul>
+    <div className="app-sidebar__section">
+      <div className="app-sidebar__section-title">{title}</div>
+      <ul className="app-sidebar__list">{children}</ul>
     </div>
   );
 }
@@ -250,28 +135,17 @@ function NavItem({
   onClick?: () => void;
 }) {
   return (
-    <li
-      style={{
-        padding: "8px 12px",
-        marginBottom: 4,
-        borderRadius: 6,
-        cursor: "pointer",
-        fontSize: 14,
-        color: active ? "#111827" : "#374151",
-        background: active ? "#e5e7eb" : "transparent",
-        fontWeight: active ? 600 : 500,
-        borderLeft: active ? "3px solid #2563eb" : "3px solid transparent",
-      }}
-      onClick={onClick}
-    >
-      {children}
+    <li>
+      <button
+        type="button"
+        className={`app-sidebar__item ${active ? "is-active" : ""}`}
+        onClick={onClick}
+      >
+        {children}
+      </button>
     </li>
   );
 }
-
-/* =========================
-   Layout
-========================= */
 
 interface LayoutProps {
   children: ReactNode;
@@ -280,8 +154,10 @@ interface LayoutProps {
   onProfile: () => void;
   onWorkspace: () => void;
   onQuit: () => void;
+  onLeanInception: () => void;
   userName: string;
   workspaceName: string;
+  productName: string;
 }
 
 export default function AppLayout({
@@ -291,31 +167,26 @@ export default function AppLayout({
   onProfile,
   onWorkspace,
   onQuit,
+  onLeanInception,
   userName,
   workspaceName,
+  productName,
 }: LayoutProps) {
   return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        height: "100vh",
-        width: "100vw",
-        overflow: "hidden",
-      }}
-    >
+    <div className="app-shell">
       <TopBar
         userName={userName}
         workspaceName={workspaceName}
         onProfile={onProfile}
         onWorkspace={onWorkspace}
         onQuit={onQuit}
+        onLeanInception={onLeanInception}
         activeNav={activeNav}
       />
 
-      <div style={{ display: "flex", flex: 1, minHeight: 0 }}>
-        <SideNav activeNav={activeNav} onNavigate={onNavigate} />
-        <main style={{ ...contentStyle, minHeight: 0 }}>{children}</main>
+      <div className="app-shell__body">
+        <SideNav activeNav={activeNav} onNavigate={onNavigate} productName={productName} />
+        <main className="app-content">{children}</main>
       </div>
     </div>
   );

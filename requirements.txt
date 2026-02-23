@@ -7,3 +7,6 @@ python-jose
 passlib[bcrypt]
 bcrypt<4
 python-dotenv
+pytest
+httpx
+pytest-cov

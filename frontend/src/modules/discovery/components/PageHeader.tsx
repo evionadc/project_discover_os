@@ -4,9 +4,9 @@ export function PageHeader({ title, subtitle }: {
 }) {
   return (
     <div style={{ marginBottom: 24 }}>
-      <h1 style={{ fontSize: 36, marginBottom: 4 }}>{title}</h1>
+      <h1 className="section-title" style={{ marginBottom: 4 }}>{title}</h1>
       {subtitle && (
-        <span style={{ color: "#94a3b8", fontSize: 14 }}>
+        <span style={{ color: "var(--text-soft)", fontSize: 14 }}>
           {subtitle}
         </span>
       )}

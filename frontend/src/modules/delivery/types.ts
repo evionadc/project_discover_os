@@ -1,19 +1,28 @@
-﻿export interface Feature {
+export interface Feature {
   id: string;
+  product_id?: number | null;
+  persona_id?: string | null;
+  journey_id?: string | null;
   title: string;
   description?: string | null;
-  business_value?: string | null;
+  complexity: "low" | "medium" | "high";
+  business_estimate?: number | null;
+  effort_estimate?: number | null;
+  ux_estimate?: number | null;
   status?: string;
-  hypothesis_id?: string | null;
-  mvp_id?: string | null;
 }
 
 export interface FeatureCreate {
-  hypothesis_id?: string | null;
-  mvp_id?: string | null;
+  product_id: number;
+  persona_id?: string | null;
+  journey_id?: string | null;
   title: string;
   description?: string | null;
-  business_value?: string | null;
+  complexity: "low" | "medium" | "high";
+  business_estimate?: number | null;
+  effort_estimate?: number | null;
+  ux_estimate?: number | null;
+  status?: "todo" | "doing" | "done";
 }
 
 export interface Story {
@@ -34,4 +43,5 @@ export interface StoryCreate {
   description?: string | null;
   acceptance_criteria?: string | null;
   estimate?: number | null;
+  status?: "todo" | "doing" | "done";
 }
