@@ -19,6 +19,8 @@ class Settings:
     access_token_expire_minutes: int = int(
         os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "60")
     )
+    admin_email: str | None = os.getenv("ADMIN_EMAIL")
+    admin_password: str | None = os.getenv("ADMIN_PASSWORD")
 
 
 settings = Settings()
