@@ -39,22 +39,25 @@ export default function FeaturesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const loadData = async (productId: number) => {
-    const [featureData, personaData, journeyData, inceptionData] = await Promise.all([
-      listFeatures(productId),
-      getPersonas(),
-      getUserJourneys(),
-      listInceptions("lean_inception", true),
-    ]);
-    setFeatures(featureData);
-    setPersonas(personaData);
-    setJourneys(journeyData);
-    const sorted = (inceptionData as Inception[]).sort((a, b) => a.title.localeCompare(b.title));
-    setInceptions(sorted);
-    if (sorted.length > 0 && !selectedInceptionId) {
-      setSelectedInceptionId(sorted[0].id);
-    }
-  };
+  const loadData = useCallback(
+    async (productId: number) => {
+      const [featureData, personaData, journeyData, inceptionData] = await Promise.all([
+        listFeatures(productId),
+        getPersonas(),
+        getUserJourneys(),
+        listInceptions("lean_inception", true),
+      ]);
+      setFeatures(featureData);
+      setPersonas(personaData);
+      setJourneys(journeyData);
+      const sorted = (inceptionData as Inception[]).sort((a, b) => a.title.localeCompare(b.title));
+      setInceptions(sorted);
+      if (sorted.length > 0 && !selectedInceptionId) {
+        setSelectedInceptionId(sorted[0].id);
+      }
+    },
+    [selectedInceptionId]
+  );
 
   useEffect(() => {
     const handler = (event: Event) => {
