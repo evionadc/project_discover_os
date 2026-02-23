@@ -1,13 +1,11 @@
-﻿import { useEffect, useMemo, useState } from "react";
+﻿import { useCallback, useEffect, useMemo, useState } from "react";
 import { PageHeader } from "../../discovery/components/PageHeader";
 import { EmptyState } from "../../discovery/components/EmptyState";
 import { listInceptions, createInception, listInceptionSteps, upsertInceptionStep } from "../services/inceptionApi";
 import type { Inception, InceptionStep } from "../types";
 import { useWorkspace } from "../../shared/hooks/useWorkspace";
 import { createPersona, getPersonas, getProblems } from "../../discovery/services/discoveryApi";
-import { listFeatures } from "../../delivery/services/deliveryApi";
 import type { Persona, Problem } from "../../discovery/types";
-import type { Feature } from "../../delivery/types";
 import ProductVisionSection from "../components/ProductVisionSection";
 import BoundariesSection from "../components/BoundariesSection";
 import JourneySection from "../components/JourneySection";
@@ -50,7 +48,6 @@ export default function InceptionWizardPage() {
   const [newTitle, setNewTitle] = useState("Lean Inception");
 
   const [personas, setPersonas] = useState<Persona[]>([]);
-  const [features, setFeatures] = useState<Feature[]>([]);
   const [problems, setProblems] = useState<Problem[]>([]);
 
   const [targetAudience, setTargetAudience] = useState("");
@@ -71,7 +68,6 @@ export default function InceptionWizardPage() {
   const [rawFeaturesText, setRawFeaturesText] = useState("");
   const [featureCards, setFeatureCards] = useState<{ id: string; text: string }[]>([]);
   const [newFeatureText, setNewFeatureText] = useState("");
-  const [reviewText, setReviewText] = useState("");
   const [reviewCards, setReviewCards] = useState<{
     id: string;
     text: string;
@@ -130,12 +126,11 @@ export default function InceptionWizardPage() {
 
   useEffect(() => {
     let isMounted = true;
-    Promise.all([listInceptions("lean_inception"), getPersonas(), listFeatures(), getProblems()])
-      .then(([inceptionData, personaData, featureData, problemData]) => {
+    Promise.all([listInceptions("lean_inception"), getPersonas(), getProblems()])
+      .then(([inceptionData, personaData, problemData]) => {
         if (!isMounted) return;
         setInceptions(inceptionData);
         setPersonas(personaData);
-        setFeatures(featureData);
         setProblems(problemData);
         if (inceptionData.length > 0) {
           setSelectedInceptionId(inceptionData[0].id);
@@ -168,9 +163,9 @@ export default function InceptionWizardPage() {
     return () => {
       isMounted = false;
     };
-  }, [selectedInceptionId]);
+  }, [selectedInceptionId, hydrateSteps]);
 
-  const hydrateSteps = (stepsData: InceptionStep[]) => {
+  const hydrateSteps = useCallback((stepsData: InceptionStep[]) => {
     const map = new Map(stepsData.map((step) => [step.step_key, step.payload]));
     const vision = map.get("product_vision") as
       | {
@@ -254,7 +249,6 @@ export default function InceptionWizardPage() {
       }
 
       const reviewPayload = map.get("review_matrix") as { items?: string[] } | undefined;
-      setReviewText(joinLines(reviewPayload?.items));
       if (reviewPayload?.items?.length) {
         const parsed = reviewPayload.items.map((item, index) => {
           const [text, ...meta] = item.split("|");
@@ -296,7 +290,7 @@ export default function InceptionWizardPage() {
     setAcceptanceCriteria(mvpPayload?.acceptance_criteria ?? "");
     setCostSchedule(mvpPayload?.cost_schedule ?? "");
     setSelectedFeatureIds(mvpPayload?.feature_ids ?? []);
-  };
+  }, []);
 
   const handleCreateInception = async () => {
     if (!newTitle.trim()) return;
@@ -366,24 +360,6 @@ export default function InceptionWizardPage() {
               ux: review?.ux,
             };
           }),
-        };
-      } else if (activeStep === "feature_review") {
-        payload = {
-          features: cards.map((card) => {
-            const review = reviewMap.get(card.text);
-            return {
-              text: card.text,
-              what: review?.what ?? "medium",
-              how: review?.how ?? "medium",
-              effort: review?.effort,
-              business: review?.business,
-              ux: review?.ux,
-            };
-          }),
-          sequencing: {
-            waves: sequencingWaves,
-            deps: sequencingDeps,
-          },
         };
       } else if (activeStep === "mvp_canvas") {
           payload = {

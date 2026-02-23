@@ -81,7 +81,7 @@ export default function UserJourneysPage() {
   };
 
   const handleDeleteJourney = async (journey: UserJourney) => {
-    const ok = window.confirm(`Excluir jornada \"${journey.name}\"?`);
+    const ok = window.confirm(`Excluir jornada "${journey.name}"?`);
     if (!ok) return;
     setSavingId(journey.id);
     try {

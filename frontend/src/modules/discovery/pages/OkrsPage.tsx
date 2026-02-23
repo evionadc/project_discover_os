@@ -75,7 +75,7 @@ export default function OkrsPage({ productId }: { productId: number | null }) {
   };
 
   const handleDelete = async (okr: ProductOkr) => {
-    const ok = window.confirm(`Excluir objetivo \"${okr.objective}\"?`);
+    const ok = window.confirm(`Excluir objetivo "${okr.objective}"?`);
     if (!ok) return;
     setSavingId(okr.id);
     try {
