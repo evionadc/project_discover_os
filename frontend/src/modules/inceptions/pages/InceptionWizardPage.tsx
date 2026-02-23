@@ -90,6 +90,141 @@ export default function InceptionWizardPage() {
   const [newPersonaGoal, setNewPersonaGoal] = useState("");
   const [newPersonaPain, setNewPersonaPain] = useState("");
 
+  const hydrateSteps = useCallback(
+    (stepsData: InceptionStep[]) => {
+      const map = new Map(stepsData.map((step) => [step.step_key, step.payload]));
+      const vision = map.get("product_vision") as
+        | {
+            target_audience?: string;
+            problem_statement?: string;
+            product_name?: string;
+            product_category?: string;
+            key_benefit?: string;
+            alternatives?: string;
+            differential?: string;
+          }
+        | undefined;
+      setTargetAudience(vision?.target_audience ?? "");
+      setProblemStatement(vision?.problem_statement ?? "");
+      setProductName(vision?.product_name ?? "");
+      setProductCategory(vision?.product_category ?? "");
+      setKeyBenefit(vision?.key_benefit ?? "");
+      setAlternatives(vision?.alternatives ?? "");
+      setDifferential(vision?.differential ?? "");
+
+      const boundaries = map.get("boundaries") as
+        | { is?: string[]; is_not?: string[]; does?: string[]; does_not?: string[] }
+        | undefined;
+      setIsText(joinLines(boundaries?.is));
+      setIsNotText(joinLines(boundaries?.is_not));
+      setDoesText(joinLines(boundaries?.does));
+      setDoesNotText(joinLines(boundaries?.does_not));
+
+      const personaPayload = map.get("personas") as { persona_ids?: string[] } | undefined;
+      setSelectedPersonaIds(personaPayload?.persona_ids ?? []);
+
+      const journeyPayload = map.get("journey_map") as {
+        stages?: { stage: string; emotion?: string; pain?: string }[];
+      } | undefined;
+      setJourneyText(
+        journeyPayload?.stages?.map((stage) => `${stage.stage} | ${stage.emotion ?? ""} | ${stage.pain ?? ""}`).join("\n") ??
+          ""
+      );
+      if (journeyPayload?.stages?.length) {
+        setJourneyCards(
+          journeyPayload.stages.map((stage, index) => ({
+            id: `stage-${index}-${stage.stage}`,
+            text: stage.stage,
+          }))
+        );
+      } else {
+        setJourneyCards([]);
+      }
+
+      const featureReviewPayload = map.get("feature_review") as
+        | { features?: { text: string; what?: string; how?: string; effort?: number; business?: number; ux?: number }[] }
+        | undefined;
+
+      if (featureReviewPayload?.features?.length) {
+        setFeatureCards(
+          featureReviewPayload.features.map((feature, index) => ({
+            id: `feature-${index}-${feature.text}`,
+            text: feature.text,
+          }))
+        );
+        setReviewCards(
+          featureReviewPayload.features.map((feature, index) => ({
+            id: `review-${index}-${feature.text}`,
+            text: feature.text,
+            what: (feature.what as "low" | "medium" | "high") ?? "medium",
+            how: (feature.how as "low" | "medium" | "high") ?? "medium",
+            effort: feature.effort as 1 | 2 | 3 | undefined,
+            business: feature.business as 1 | 2 | 3 | undefined,
+            ux: feature.ux as 1 | 2 | 3 | undefined,
+          }))
+        );
+      } else {
+        const rawFeaturesPayload = map.get("raw_features") as { features?: string[] } | undefined;
+        setRawFeaturesText(joinLines(rawFeaturesPayload?.features));
+        if (rawFeaturesPayload?.features?.length) {
+          setFeatureCards(
+            rawFeaturesPayload.features.map((feature, index) => ({
+              id: `feature-${index}-${feature}`,
+              text: feature,
+            }))
+          );
+        } else {
+          setFeatureCards([]);
+        }
+
+        const reviewPayload = map.get("review_matrix") as { items?: string[] } | undefined;
+        if (reviewPayload?.items?.length) {
+          const parsed = reviewPayload.items.map((item, index) => {
+            const [text, ...meta] = item.split("|");
+            const metaMap = new Map(meta.map((entry) => entry.split(":") as [string, string]));
+            return {
+              id: `review-${index}-${text}`,
+              text: text.trim(),
+              what: (metaMap.get("what") as "low" | "medium" | "high") ?? "medium",
+              how: (metaMap.get("how") as "low" | "medium" | "high") ?? "medium",
+              effort: (metaMap.get("effort") ? Number(metaMap.get("effort")) : undefined) as 1 | 2 | 3 | undefined,
+              business: (metaMap.get("business") ? Number(metaMap.get("business")) : undefined) as 1 | 2 | 3 | undefined,
+              ux: (metaMap.get("ux") ? Number(metaMap.get("ux")) : undefined) as 1 | 2 | 3 | undefined,
+            };
+          });
+          setReviewCards(parsed);
+          if (featureCards.length === 0) {
+            setFeatureCards(parsed.map((card, index) => ({ id: `feature-${index}-${card.text}`, text: card.text })));
+          }
+        } else {
+          setReviewCards([]);
+        }
+      }
+
+      const sequencingPayload = map.get("sequencing") as
+        | { waves?: { id: string; cards: string[] }[]; deps?: Record<string, string> }
+        | undefined;
+      if (sequencingPayload?.waves) {
+        setSequencingWaves(sequencingPayload.waves);
+        setSequencingDeps(sequencingPayload.deps ?? {});
+      }
+
+      const mvpPayload = map.get("mvp_canvas") as {
+        essential_scope?: string;
+        success_metrics?: string;
+        acceptance_criteria?: string;
+        cost_schedule?: string;
+        feature_ids?: string[];
+      } | undefined;
+      setEssentialScope(mvpPayload?.essential_scope ?? "");
+      setSuccessMetrics(mvpPayload?.success_metrics ?? "");
+      setAcceptanceCriteria(mvpPayload?.acceptance_criteria ?? "");
+      setCostSchedule(mvpPayload?.cost_schedule ?? "");
+      setSelectedFeatureIds(mvpPayload?.feature_ids ?? []);
+    },
+    [featureCards.length]
+  );
+
   const formFieldStyle: React.CSSProperties = {
     display: "block",
     marginBottom: 8,
@@ -164,136 +299,6 @@ export default function InceptionWizardPage() {
       isMounted = false;
     };
   }, [selectedInceptionId, hydrateSteps]);
-
-  const hydrateSteps = useCallback(
-    (stepsData: InceptionStep[]) => {
-    const map = new Map(stepsData.map((step) => [step.step_key, step.payload]));
-    const vision = map.get("product_vision") as
-      | {
-          target_audience?: string;
-          problem_statement?: string;
-          product_name?: string;
-          product_category?: string;
-          key_benefit?: string;
-          alternatives?: string;
-          differential?: string;
-        }
-      | undefined;
-    setTargetAudience(vision?.target_audience ?? "");
-    setProblemStatement(vision?.problem_statement ?? "");
-    setProductName(vision?.product_name ?? "");
-    setProductCategory(vision?.product_category ?? "");
-    setKeyBenefit(vision?.key_benefit ?? "");
-    setAlternatives(vision?.alternatives ?? "");
-    setDifferential(vision?.differential ?? "");
-
-    const boundaries = map.get("boundaries") as
-      | { is?: string[]; is_not?: string[]; does?: string[]; does_not?: string[] }
-      | undefined;
-    setIsText(joinLines(boundaries?.is));
-    setIsNotText(joinLines(boundaries?.is_not));
-    setDoesText(joinLines(boundaries?.does));
-    setDoesNotText(joinLines(boundaries?.does_not));
-
-    const personaPayload = map.get("personas") as { persona_ids?: string[] } | undefined;
-    setSelectedPersonaIds(personaPayload?.persona_ids ?? []);
-
-    const journeyPayload = map.get("journey_map") as { stages?: { stage: string; emotion?: string; pain?: string }[] } | undefined;
-    setJourneyText(
-      journeyPayload?.stages?.map((stage) => `${stage.stage} | ${stage.emotion ?? ""} | ${stage.pain ?? ""}`).join("\n") ?? ""
-    );
-    if (journeyPayload?.stages?.length) {
-      setJourneyCards(
-        journeyPayload.stages.map((stage, index) => ({
-          id: `stage-${index}-${stage.stage}`,
-          text: stage.stage,
-        }))
-      );
-    } else {
-      setJourneyCards([]);
-    }
-
-    const featureReviewPayload = map.get("feature_review") as
-      | { features?: { text: string; what?: string; how?: string; effort?: number; business?: number; ux?: number }[] }
-      | undefined;
-
-    if (featureReviewPayload?.features?.length) {
-      setFeatureCards(
-        featureReviewPayload.features.map((feature, index) => ({
-          id: `feature-${index}-${feature.text}`,
-          text: feature.text,
-        }))
-      );
-      setReviewCards(
-        featureReviewPayload.features.map((feature, index) => ({
-          id: `review-${index}-${feature.text}`,
-          text: feature.text,
-          what: (feature.what as "low" | "medium" | "high") ?? "medium",
-          how: (feature.how as "low" | "medium" | "high") ?? "medium",
-          effort: feature.effort as 1 | 2 | 3 | undefined,
-          business: feature.business as 1 | 2 | 3 | undefined,
-          ux: feature.ux as 1 | 2 | 3 | undefined,
-        }))
-      );
-    } else {
-      const rawFeaturesPayload = map.get("raw_features") as { features?: string[] } | undefined;
-      setRawFeaturesText(joinLines(rawFeaturesPayload?.features));
-      if (rawFeaturesPayload?.features?.length) {
-        setFeatureCards(
-          rawFeaturesPayload.features.map((feature, index) => ({
-            id: `feature-${index}-${feature}`,
-            text: feature,
-          }))
-        );
-      } else {
-        setFeatureCards([]);
-      }
-
-      const reviewPayload = map.get("review_matrix") as { items?: string[] } | undefined;
-      if (reviewPayload?.items?.length) {
-        const parsed = reviewPayload.items.map((item, index) => {
-          const [text, ...meta] = item.split("|");
-          const metaMap = new Map(meta.map((entry) => entry.split(":") as [string, string]));
-          return {
-            id: `review-${index}-${text}`,
-            text: text.trim(),
-            what: (metaMap.get("what") as "low" | "medium" | "high") ?? "medium",
-            how: (metaMap.get("how") as "low" | "medium" | "high") ?? "medium",
-            effort: (metaMap.get("effort") ? Number(metaMap.get("effort")) : undefined) as 1 | 2 | 3 | undefined,
-            business: (metaMap.get("business") ? Number(metaMap.get("business")) : undefined) as 1 | 2 | 3 | undefined,
-            ux: (metaMap.get("ux") ? Number(metaMap.get("ux")) : undefined) as 1 | 2 | 3 | undefined,
-          };
-        });
-        setReviewCards(parsed);
-        if (featureCards.length === 0) {
-          setFeatureCards(parsed.map((card, index) => ({ id: `feature-${index}-${card.text}`, text: card.text })));
-        }
-      } else {
-        setReviewCards([]);
-      }
-    }
-
-    const sequencingPayload = map.get("sequencing") as { waves?: { id: string; cards: string[] }[]; deps?: Record<string, string> } | undefined;
-    if (sequencingPayload?.waves) {
-      setSequencingWaves(sequencingPayload.waves);
-      setSequencingDeps(sequencingPayload.deps ?? {});
-    }
-
-    const mvpPayload = map.get("mvp_canvas") as {
-      essential_scope?: string;
-      success_metrics?: string;
-      acceptance_criteria?: string;
-      cost_schedule?: string;
-      feature_ids?: string[];
-    } | undefined;
-    setEssentialScope(mvpPayload?.essential_scope ?? "");
-    setSuccessMetrics(mvpPayload?.success_metrics ?? "");
-    setAcceptanceCriteria(mvpPayload?.acceptance_criteria ?? "");
-    setCostSchedule(mvpPayload?.cost_schedule ?? "");
-    setSelectedFeatureIds(mvpPayload?.feature_ids ?? []);
-  },
-    [featureCards.length]
-  );
 
   const handleCreateInception = async () => {
     if (!newTitle.trim()) return;
