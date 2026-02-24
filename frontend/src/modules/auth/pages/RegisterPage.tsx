@@ -1,16 +1,18 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { PageHeader } from "../../discovery/components/PageHeader";
 
 interface RegisterPageProps {
+  onRegister: (data: { email: string; password: string }) => Promise<void>;
   onBackToLogin: () => void;
 }
 
-export default function RegisterPage({ onBackToLogin }: RegisterPageProps) {
+export default function RegisterPage({ onRegister, onBackToLogin }: RegisterPageProps) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const passwordsMatch = password.trim().length > 0 && password === confirm;
   const canSubmit =
@@ -23,8 +25,10 @@ export default function RegisterPage({ onBackToLogin }: RegisterPageProps) {
     if (!canSubmit) return;
     setSubmitting(true);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 400));
-      onBackToLogin();
+      setError(null);
+      await onRegister({ email, password });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Falha ao criar conta");
     } finally {
       setSubmitting(false);
     }
@@ -120,13 +124,15 @@ export default function RegisterPage({ onBackToLogin }: RegisterPageProps) {
             As senhas não coincidem.
           </p>
         )}
+        {error && <p style={{ color: "#b91c1c", marginTop: 0 }}>{error}</p>}
         <button onClick={handleSubmit} disabled={!canSubmit} style={primaryButton}>
-          {submitting ? "Creating account..." : "Create account"}
+          {submitting ? "Criando conta..." : "Criar conta"}
         </button>
         <button onClick={onBackToLogin} style={ghostButton}>
-          Back to login
+          Voltar para login
         </button>
       </section>
     </div>
   );
 }
+

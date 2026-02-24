@@ -1,4 +1,10 @@
-const API_URL = import.meta.env.VITE_API_URL ?? "http://127.0.0.1:8000";
+const API_URL = (import.meta.env.VITE_API_URL ?? "http://127.0.0.1:8000").replace(/\/+$/, "");
+
+export interface WorkspaceSummary {
+  id: number;
+  name: string;
+  owner_id: number;
+}
 
 export interface WorkspaceMember {
   workspace_id: number;
@@ -23,6 +29,32 @@ export interface WorkspaceProductDetail extends WorkspaceProduct {
     does?: string[];
     does_not?: string[];
   } | null;
+}
+
+export async function listWorkspaces(userId?: number): Promise<WorkspaceSummary[]> {
+  const query = userId ? `?user_id=${userId}` : "";
+  const res = await fetch(`${API_URL}/workspaces${query}`);
+  if (!res.ok) throw new Error("Failed to load workspaces");
+  return res.json();
+}
+
+export async function createWorkspace(data: {
+  name: string;
+  owner_id: number;
+  member_ids?: number[];
+}): Promise<WorkspaceSummary> {
+  const res = await fetch(`${API_URL}/workspaces`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      ...data,
+      member_ids: data.member_ids ?? [],
+    }),
+  });
+  if (!res.ok) throw new Error("Failed to create workspace");
+  return res.json();
 }
 
 export async function listWorkspaceMembers(workspaceId: number): Promise<WorkspaceMember[]> {

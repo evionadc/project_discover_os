@@ -1,8 +1,8 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { PageHeader } from "../../discovery/components/PageHeader";
 
 interface LoginPageProps {
-  onLogin: () => void;
+  onLogin: (credentials: { email: string; password: string }) => Promise<void>;
   onRegister: () => void;
 }
 
@@ -10,6 +10,7 @@ export default function LoginPage({ onLogin, onRegister }: LoginPageProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const canSubmit = email.trim().length > 0 && password.trim().length > 0 && !submitting;
 
@@ -17,8 +18,10 @@ export default function LoginPage({ onLogin, onRegister }: LoginPageProps) {
     if (!canSubmit) return;
     setSubmitting(true);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 400));
-      onLogin();
+      setError(null);
+      await onLogin({ email, password });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Falha ao autenticar");
     } finally {
       setSubmitting(false);
     }
@@ -90,19 +93,21 @@ export default function LoginPage({ onLogin, onRegister }: LoginPageProps) {
           style={fieldStyle}
         />
         <input
-          placeholder="Password"
+          placeholder="Senha"
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           style={{ ...fieldStyle, marginBottom: 12 }}
         />
+        {error && <p style={{ color: "#b91c1c", marginTop: 0 }}>{error}</p>}
         <button onClick={handleSubmit} disabled={!canSubmit} style={primaryButton}>
-          {submitting ? "Signing in..." : "Sign in"}
+          {submitting ? "Entrando..." : "Entrar"}
         </button>
         <button onClick={onRegister} style={ghostButton}>
-          Create account
+          Criar conta
         </button>
       </section>
     </div>
   );
 }
+
