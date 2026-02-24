@@ -1,9 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.modules.discovery import models, schemas
 from app.modules.workspace.models import ProductBlueprint
+from app.modules.workspace.models import Workspace
 import uuid
 
 router = APIRouter(prefix="/discovery", tags=["Discovery"])
@@ -14,9 +16,27 @@ def list_problems(db: Session = Depends(get_db)):
 
 @router.post("/problems", response_model=schemas.ProblemResponse)
 def create_problem(data: schemas.ProblemCreate, db: Session = Depends(get_db)):
-    problem = models.Problem(**data.dict())
+    payload = data.dict()
+    workspace = db.query(Workspace).filter(Workspace.id == data.workspace_id).first()
+    if not workspace:
+        workspace = db.query(Workspace).order_by(Workspace.id.asc()).first()
+        if not workspace:
+            raise HTTPException(
+                status_code=400,
+                detail="No workspace found. Create a workspace first.",
+            )
+        payload["workspace_id"] = workspace.id
+
+    problem = models.Problem(**payload)
     db.add(problem)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid workspace_id: {data.workspace_id}",
+        )
     db.refresh(problem)
     return problem
 
