@@ -6,6 +6,7 @@ from app.modules.workspace.router import router as workspace_router
 from app.modules.discovery.routes import router as discovery_router
 from app.modules.delivery.routes import router as delivery_router
 from app.modules.inceptions.routes import router as inceptions_router
+from app.modules.workspace.models import Workspace, WorkspaceMember
 from app.core.config import settings
 from app.core.database import SessionLocal
 from app.core.security import hash_password
@@ -46,19 +47,44 @@ app.include_router(inceptions_router)
 
 @app.on_event("startup")
 def ensure_admin_user():
-    """Create default admin user when ADMIN_EMAIL/ADMIN_PASSWORD are provided."""
-    if not settings.admin_email or not settings.admin_password:
-        return
+    """Ensure at least one user/workspace pair exists for discovery records."""
     db = SessionLocal()
     try:
-        user = db.query(User).filter(User.email == settings.admin_email).first()
-        if not user:
-            db.add(
-                User(
-                    email=settings.admin_email,
-                    password_hash=hash_password(settings.admin_password),
-                )
+        user = None
+        if settings.admin_email:
+            user = db.query(User).filter(User.email == settings.admin_email).first()
+
+        if not user and settings.admin_email and settings.admin_password:
+            user = User(
+                email=settings.admin_email,
+                password_hash=hash_password(settings.admin_password),
             )
+            db.add(user)
+            db.commit()
+            db.refresh(user)
+
+        if not user:
+            user = db.query(User).order_by(User.id.asc()).first()
+        if not user:
+            return
+
+        workspace = db.query(Workspace).order_by(Workspace.id.asc()).first()
+        if not workspace:
+            workspace = Workspace(name="Default", owner_id=user.id)
+            db.add(workspace)
+            db.commit()
+            db.refresh(workspace)
+
+        member = (
+            db.query(WorkspaceMember)
+            .filter(
+                WorkspaceMember.workspace_id == workspace.id,
+                WorkspaceMember.user_id == user.id,
+            )
+            .first()
+        )
+        if not member:
+            db.add(WorkspaceMember(workspace_id=workspace.id, user_id=user.id))
             db.commit()
     finally:
         db.close()
