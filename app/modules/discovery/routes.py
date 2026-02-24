@@ -4,11 +4,30 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.modules.discovery import models, schemas
-from app.modules.workspace.models import ProductBlueprint
-from app.modules.workspace.models import Workspace
+from app.modules.workspace.models import ProductBlueprint, Workspace, WorkspaceProduct
 import uuid
 
 router = APIRouter(prefix="/discovery", tags=["Discovery"])
+
+
+def _first_workspace_id(db: Session) -> int | None:
+    workspace = db.query(Workspace).order_by(Workspace.id.asc()).first()
+    return workspace.id if workspace else None
+
+
+def _first_problem_id(db: Session):
+    problem = db.query(models.Problem).order_by(models.Problem.title.asc()).first()
+    return problem.id if problem else None
+
+
+def _first_persona_id(db: Session):
+    persona = db.query(models.Persona).order_by(models.Persona.name.asc()).first()
+    return persona.id if persona else None
+
+
+def _first_product_id(db: Session) -> int | None:
+    product = db.query(WorkspaceProduct).order_by(WorkspaceProduct.id.asc()).first()
+    return product.id if product else None
 
 @router.get("/problems")
 def list_problems(db: Session = Depends(get_db)):
@@ -17,15 +36,14 @@ def list_problems(db: Session = Depends(get_db)):
 @router.post("/problems", response_model=schemas.ProblemResponse)
 def create_problem(data: schemas.ProblemCreate, db: Session = Depends(get_db)):
     payload = data.dict()
-    workspace = db.query(Workspace).filter(Workspace.id == data.workspace_id).first()
-    if not workspace:
-        workspace = db.query(Workspace).order_by(Workspace.id.asc()).first()
-        if not workspace:
+    if not db.query(Workspace).filter(Workspace.id == data.workspace_id).first():
+        fallback_workspace_id = _first_workspace_id(db)
+        if fallback_workspace_id is None:
             raise HTTPException(
                 status_code=400,
                 detail="No workspace found. Create a workspace first.",
             )
-        payload["workspace_id"] = workspace.id
+        payload["workspace_id"] = fallback_workspace_id
 
     problem = models.Problem(**payload)
     db.add(problem)
@@ -56,6 +74,13 @@ def update_problem(problem_id: str, data: schemas.ProblemUpdate, db: Session = D
         raise HTTPException(status_code=404, detail="Problem not found")
 
     updates = data.dict(exclude_unset=True)
+    if "workspace_id" in updates and updates["workspace_id"] is not None:
+        workspace_exists = db.query(Workspace).filter(Workspace.id == updates["workspace_id"]).first()
+        if not workspace_exists:
+            fallback_workspace_id = _first_workspace_id(db)
+            if fallback_workspace_id is None:
+                raise HTTPException(status_code=400, detail="No workspace found. Create a workspace first.")
+            updates["workspace_id"] = fallback_workspace_id
     if "title" in updates and isinstance(updates["title"], str):
         updates["title"] = updates["title"].strip()
         if not updates["title"]:
@@ -64,7 +89,11 @@ def update_problem(problem_id: str, data: schemas.ProblemUpdate, db: Session = D
     for field, value in updates.items():
         setattr(problem, field, value)
 
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=400, detail="Invalid problem payload")
     db.refresh(problem)
     return problem
 
@@ -94,9 +123,19 @@ def list_personas(db: Session = Depends(get_db)):
 
 @router.post("/personas", response_model=schemas.PersonaResponse)
 def create_persona(data: schemas.PersonaCreate, db: Session = Depends(get_db)):
-    persona = models.Persona(**data.dict())
+    payload = data.dict()
+    if not db.query(models.Problem).filter(models.Problem.id == data.problem_id).first():
+        fallback_problem_id = _first_problem_id(db)
+        if fallback_problem_id is None:
+            raise HTTPException(status_code=400, detail="No problem found. Create a problem first.")
+        payload["problem_id"] = fallback_problem_id
+    persona = models.Persona(**payload)
     db.add(persona)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=400, detail="Invalid problem_id for persona")
     db.refresh(persona)
     return persona
 
@@ -116,6 +155,13 @@ def update_persona(persona_id: str, data: schemas.PersonaUpdate, db: Session = D
         raise HTTPException(status_code=404, detail="Persona not found")
 
     updates = data.dict(exclude_unset=True)
+    if "problem_id" in updates and updates["problem_id"] is not None:
+        problem_exists = db.query(models.Problem).filter(models.Problem.id == updates["problem_id"]).first()
+        if not problem_exists:
+            fallback_problem_id = _first_problem_id(db)
+            if fallback_problem_id is None:
+                raise HTTPException(status_code=400, detail="No problem found. Create a problem first.")
+            updates["problem_id"] = fallback_problem_id
     if "name" in updates and isinstance(updates["name"], str):
         updates["name"] = updates["name"].strip()
         if not updates["name"]:
@@ -124,7 +170,11 @@ def update_persona(persona_id: str, data: schemas.PersonaUpdate, db: Session = D
     for field, value in updates.items():
         setattr(persona, field, value)
 
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=400, detail="Invalid persona payload")
     db.refresh(persona)
     return persona
 
@@ -189,13 +239,23 @@ def create_journey(data: schemas.UserJourneyCreate, db: Session = Depends(get_db
     name = data.name.strip()
     if not name:
         raise HTTPException(status_code=400, detail="Journey name cannot be empty")
+    persona_id = data.persona_id
+    if not db.query(models.Persona).filter(models.Persona.id == data.persona_id).first():
+        fallback_persona_id = _first_persona_id(db)
+        if fallback_persona_id is None:
+            raise HTTPException(status_code=400, detail="No persona found. Create a persona first.")
+        persona_id = fallback_persona_id
     journey = models.UserJourney(
-        persona_id=data.persona_id,
+        persona_id=persona_id,
         name=name,
         stages=data.stages or [],
     )
     db.add(journey)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=400, detail="Invalid persona_id for journey")
     db.refresh(journey)
     return journey
 
@@ -215,6 +275,13 @@ def update_journey(journey_id: str, data: schemas.UserJourneyUpdate, db: Session
         raise HTTPException(status_code=404, detail="Journey not found")
 
     updates = data.dict(exclude_unset=True)
+    if "persona_id" in updates and updates["persona_id"] is not None:
+        persona_exists = db.query(models.Persona).filter(models.Persona.id == updates["persona_id"]).first()
+        if not persona_exists:
+            fallback_persona_id = _first_persona_id(db)
+            if fallback_persona_id is None:
+                raise HTTPException(status_code=400, detail="No persona found. Create a persona first.")
+            updates["persona_id"] = fallback_persona_id
     if "name" in updates and isinstance(updates["name"], str):
         updates["name"] = updates["name"].strip()
         if not updates["name"]:
@@ -223,7 +290,11 @@ def update_journey(journey_id: str, data: schemas.UserJourneyUpdate, db: Session
     for field, value in updates.items():
         setattr(journey, field, value)
 
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=400, detail="Invalid journey payload")
     db.refresh(journey)
     return journey
 
@@ -300,13 +371,23 @@ def create_okr(data: schemas.ProductOKRCreate, db: Session = Depends(get_db)):
     objective = data.objective.strip()
     if not objective:
         raise HTTPException(status_code=400, detail="OKR objective cannot be empty")
+    product_id = data.product_id
+    if not db.query(WorkspaceProduct).filter(WorkspaceProduct.id == data.product_id).first():
+        fallback_product_id = _first_product_id(db)
+        if fallback_product_id is None:
+            raise HTTPException(status_code=400, detail="No product found. Create a product first.")
+        product_id = fallback_product_id
     okr = models.ProductOKR(
-        product_id=data.product_id,
+        product_id=product_id,
         objective=objective,
         key_results=[str(kr).strip() for kr in data.key_results if str(kr).strip()],
     )
     db.add(okr)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=400, detail="Invalid product_id for OKR")
     db.refresh(okr)
     return okr
 
@@ -325,6 +406,13 @@ def update_okr(okr_id: str, data: schemas.ProductOKRUpdate, db: Session = Depend
     if not okr:
         raise HTTPException(status_code=404, detail="OKR not found")
     updates = data.dict(exclude_unset=True)
+    if "product_id" in updates and updates["product_id"] is not None:
+        product_exists = db.query(WorkspaceProduct).filter(WorkspaceProduct.id == updates["product_id"]).first()
+        if not product_exists:
+            fallback_product_id = _first_product_id(db)
+            if fallback_product_id is None:
+                raise HTTPException(status_code=400, detail="No product found. Create a product first.")
+            updates["product_id"] = fallback_product_id
     if "objective" in updates and isinstance(updates["objective"], str):
         updates["objective"] = updates["objective"].strip()
         if not updates["objective"]:
@@ -333,7 +421,11 @@ def update_okr(okr_id: str, data: schemas.ProductOKRUpdate, db: Session = Depend
         updates["key_results"] = [str(kr).strip() for kr in updates["key_results"] if str(kr).strip()]
     for field, value in updates.items():
         setattr(okr, field, value)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=400, detail="Invalid OKR payload")
     db.refresh(okr)
     return okr
 
