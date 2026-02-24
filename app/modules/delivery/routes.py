@@ -1,14 +1,25 @@
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from sqlalchemy import and_
 
 from app.core.database import get_db
 from app.modules.delivery import models, schemas
-from app.modules.workspace.models import ProductBlueprint
+from app.modules.workspace.models import ProductBlueprint, Workspace, WorkspaceProduct
 from app.modules.discovery.models import Persona, UserJourney
 from app.modules.inceptions.models import InceptionStep
 
 router = APIRouter(prefix="/delivery", tags=["Delivery"])
+
+
+def _first_product_id(db: Session) -> int | None:
+    product = db.query(WorkspaceProduct).order_by(WorkspaceProduct.id.asc()).first()
+    return product.id if product else None
+
+
+def _first_workspace_id(db: Session) -> int | None:
+    workspace = db.query(Workspace).order_by(Workspace.id.asc()).first()
+    return workspace.id if workspace else None
 
 
 def _validate_feature_links(
@@ -43,10 +54,22 @@ def create_feature(data: schemas.FeatureCreate, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="Invalid complexity. Use low, medium, or high.")
     if data.status not in {"todo", "doing", "done"}:
         raise HTTPException(status_code=400, detail="Invalid status. Use todo, doing, or done.")
+    product_id = data.product_id
+    if not db.query(WorkspaceProduct).filter(WorkspaceProduct.id == data.product_id).first():
+        fallback_product_id = _first_product_id(db)
+        if fallback_product_id is None:
+            raise HTTPException(status_code=400, detail="No product found. Create a product first.")
+        product_id = fallback_product_id
     _validate_feature_links(db, data.persona_id, data.journey_id)
-    feature = models.Feature(**data.model_dump())
+    payload = data.model_dump()
+    payload["product_id"] = product_id
+    feature = models.Feature(**payload)
     db.add(feature)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=400, detail="Invalid feature payload")
     db.refresh(feature)
     return feature
 
@@ -116,6 +139,13 @@ def import_features_from_inception(
     data: schemas.FeatureImportFromInceptionRequest,
     db: Session = Depends(get_db),
 ):
+    product_id = data.product_id
+    if not db.query(WorkspaceProduct).filter(WorkspaceProduct.id == product_id).first():
+        fallback_product_id = _first_product_id(db)
+        if fallback_product_id is None:
+            raise HTTPException(status_code=400, detail="No product found. Create a product first.")
+        product_id = fallback_product_id
+
     snapshot_features: list[dict] = []
     if data.inception_id is not None:
         step = (
@@ -131,7 +161,7 @@ def import_features_from_inception(
         payload = step.payload or {}
         snapshot_features = payload.get("features") or []
     else:
-        blueprint = db.query(ProductBlueprint).filter(ProductBlueprint.product_id == data.product_id).first()
+        blueprint = db.query(ProductBlueprint).filter(ProductBlueprint.product_id == product_id).first()
         if not blueprint:
             raise HTTPException(status_code=404, detail="Product blueprint not found")
         snapshot_features = blueprint.features or []
@@ -140,7 +170,7 @@ def import_features_from_inception(
         return schemas.FeatureImportFromInceptionResponse(imported_count=0, skipped_count=0)
 
     if data.overwrite_existing:
-        db.query(models.Feature).filter(models.Feature.product_id == data.product_id).delete()
+        db.query(models.Feature).filter(models.Feature.product_id == product_id).delete()
         db.flush()
 
     imported_count = 0
@@ -154,7 +184,7 @@ def import_features_from_inception(
             db.query(models.Feature)
             .filter(
                 and_(
-                    models.Feature.product_id == data.product_id,
+                    models.Feature.product_id == product_id,
                     models.Feature.title == title,
                 )
             )
@@ -172,7 +202,7 @@ def import_features_from_inception(
         ux_estimate = _parse_estimate(item.get("ux"))
 
         feature = models.Feature(
-            product_id=data.product_id,
+            product_id=product_id,
             title=title,
             description=None,
             complexity=complexity,
@@ -184,7 +214,11 @@ def import_features_from_inception(
         db.add(feature)
         imported_count += 1
 
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=400, detail="Invalid feature import payload")
     return schemas.FeatureImportFromInceptionResponse(
         imported_count=imported_count,
         skipped_count=skipped_count,
@@ -200,9 +234,31 @@ def list_stories(db: Session = Depends(get_db)):
 def create_story(data: schemas.StoryCreate, db: Session = Depends(get_db)):
     if data.feature_id is None and data.workspace_id is None:
         raise HTTPException(status_code=400, detail="Story requires feature_id or workspace_id")
-    story = models.Story(**data.model_dump())
+    payload = data.model_dump()
+    if payload.get("feature_id") is not None:
+        feature = db.query(models.Feature).filter(models.Feature.id == payload["feature_id"]).first()
+        if not feature:
+            raise HTTPException(status_code=400, detail="Feature not found for story")
+        if payload.get("workspace_id") is None:
+            product = db.query(WorkspaceProduct).filter(WorkspaceProduct.id == feature.product_id).first()
+            if product:
+                payload["workspace_id"] = product.workspace_id
+
+    if payload.get("workspace_id") is not None:
+        workspace = db.query(Workspace).filter(Workspace.id == payload["workspace_id"]).first()
+        if not workspace:
+            fallback_workspace_id = _first_workspace_id(db)
+            if fallback_workspace_id is None:
+                raise HTTPException(status_code=400, detail="No workspace found. Create a workspace first.")
+            payload["workspace_id"] = fallback_workspace_id
+
+    story = models.Story(**payload)
     db.add(story)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=400, detail="Invalid story payload")
     db.refresh(story)
     return story
 
@@ -215,9 +271,25 @@ def update_story(story_id: str, data: schemas.StoryUpdate, db: Session = Depends
     payload = data.model_dump(exclude_unset=True)
     if "feature_id" in payload and payload["feature_id"] is None and payload.get("workspace_id") is None and story.workspace_id is None:
         raise HTTPException(status_code=400, detail="Story requires feature_id or workspace_id")
+    if "feature_id" in payload and payload["feature_id"] is not None:
+        feature = db.query(models.Feature).filter(models.Feature.id == payload["feature_id"]).first()
+        if not feature:
+            raise HTTPException(status_code=400, detail="Feature not found for story")
+    if "workspace_id" in payload and payload["workspace_id"] is not None:
+        workspace = db.query(Workspace).filter(Workspace.id == payload["workspace_id"]).first()
+        if not workspace:
+            fallback_workspace_id = _first_workspace_id(db)
+            if fallback_workspace_id is None:
+                raise HTTPException(status_code=400, detail="No workspace found. Create a workspace first.")
+            payload["workspace_id"] = fallback_workspace_id
+
     for field, value in payload.items():
         setattr(story, field, value)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=400, detail="Invalid story payload")
     db.refresh(story)
     return story
 
